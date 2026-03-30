@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Pokédex Ultimate</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin: 0;
+      color: white;
+      background: linear-gradient(270deg, #ff0000, #0000ff, #00ff00);
+      background-size: 600% 600%;
+      animation: fundo 10s infinite;
+    }
+
+    @keyframes fundo {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+
+    h1 {
+      background: rgba(0,0,0,0.5);
+      padding: 15px;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    section {
+      background: rgba(0,0,0,0.7);
+      margin: 15px auto;
+      padding: 15px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 320px;
+    }
+
+    img {
+      width: 120px;
+      image-rendering: pixelated;
+    }
+
+    .barra {
+      background: #555;
+      border-radius: 10px;
+      margin: 5px 0;
+    }
+
+    .progresso {
+      height: 10px;
+      border-radius: 10px;
+      background: lime;
+    }
+
+    .sugestoes {
+      background: white;
+      color: black;
+      width: 200px;
+      margin: auto;
+      border-radius: 5px;
+      position: relative;
+    }
+
+    .sugestoes div {
+      padding: 5px;
+      cursor: pointer;
+    }
+
+    .sugestoes div:hover {
+      background: #ddd;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1>📟 Pokédex Ultimate</h1>
+
+  <input type="text" id="nomePokemon" placeholder="Digite o Pokémon" oninput="autoCompletar()">
+  <button onclick="buscarPokemon()">Buscar</button>
+
+  <div id="sugestoes" class="sugestoes"></div>
+
+  <section>
+    <h2>Pokémon</h2>
+    <div id="pokemon">---</div>
+  </section>
+
+  <section>
+    <h2>Stats</h2>
+    <div id="stats">---</div>
+  </section>
+
+  <script>
+
+    let listaPokemons = [];
+
+    // 🔍 carregar lista de pokemons
+    fetch("https://pokeapi.co/api/v2/pokemon?limit=200")
+      .then(res => res.json())
+      .then(data => {
+        listaPokemons = data.results.map(p => p.name);
+      });
+
+    function autoCompletar() {
+      let input = document.getElementById("nomePokemon").value.toLowerCase();
+      let sugestoes = document.getElementById("sugestoes");
+
+      sugestoes.innerHTML = "";
+
+      if (!input) return;
+
+      let filtrados = listaPokemons.filter(p => p.startsWith(input)).slice(0,5);
+
+      filtrados.forEach(p => {
+        sugestoes.innerHTML += `<div onclick="selecionar('${p}')">${p}</div>`;
+      });
+    }
+
+    function selecionar(nome) {
+      document.getElementById("nomePokemon").value = nome;
+      document.getElementById("sugestoes").innerHTML = "";
+      buscarPokemon();
+    }
+
+    function buscarPokemon() {
+
+      let nome = document.getElementById("nomePokemon").value.toLowerCase();
+
+      fetch("https://pokeapi.co/api/v2/pokemon/" + nome)
+        .then(res => res.json())
+        .then(data => {
+
+          // 🖼️ sprite animado
+          let gif = data.sprites.versions["generation-v"]["black-white"].animated.front_default 
+                    || data.sprites.front_default;
+
+          // 🎵 som real
+          let som = new Audio("https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/" + data.id + ".ogg");
+          som.play();
+
+          document.getElementById("pokemon").innerHTML =
+            "<h3>" + data.name + "</h3>" +
+            "<img src='" + gif + "'>";
+
+          // 📊 stats
+          let statsHTML = "";
+
+          data.stats.forEach(s => {
+            statsHTML += `
+              <p>${s.stat.name}: ${s.base_stat}</p>
+              <div class="barra">
+                <div class="progresso" style="width:${s.base_stat}px"></div>
+              </div>
+            `;
+          });
+
+          document.getElementById("stats").innerHTML = statsHTML;
+
+        })
+        .catch(() => {
+          document.getElementById("pokemon").innerHTML = "Erro ❌";
+        });
+    }
+
+  </script>
+
+</body>
+</html>
